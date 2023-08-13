@@ -6,7 +6,6 @@
    [integrant.core :as ig]
    [ring.adapter.jetty :as jetty]
 
-   [ring.util.response :as resp]
    [muuntaja.core :as m]
    [ring.middleware.gzip :refer [wrap-gzip]]
    [ring.middleware.defaults :as ring-defaults]
@@ -19,8 +18,8 @@
    [reitit.ring.middleware.defaults]))
 
 (defn find-content! [file search-str]
-  (doall
-   (with-open [rdr (io/reader file)]
+  (with-open [rdr (io/reader file)]
+    (doall
      (sequence
       (comp
        (drop-while
@@ -30,20 +29,20 @@
        (filter #(str/index-of % search-str)))
       (line-seq rdr)))))
 
+(defn search!-1 [q]
+  (doall
+   (sequence
+    (comp
+     (map (fn [{:keys [path]}]
+            {:file (io/file (:ftlm-search/public-dir config) path)
+             :path path}))
+     (keep (fn [{:keys [file path]}]
+             (when-let [lines (seq (find-content! file q))]
+               {:lines lines :path path}))))
+    (read-string (slurp (io/file (:ftlm-search/public-dir config) "posts-list.edn"))))))
+
 (defn search! [req]
-  (let [q (-> req :body-params :q)]
-    {:status 200
-     :body
-     (doall
-      (sequence
-       (comp
-        (map (fn [{:keys [path]}]
-               {:file (io/file (:ftlm-search/public-dir config) path)
-                :path path}))
-        (keep (fn [{:keys [file path]}]
-                (when-let [lines (seq (find-content! file q))]
-                  {:lines lines :path path}))))
-       (read-string (slurp (io/file (:ftlm-search/public-dir config) "posts-list.edn")))))}))
+  {:status 200 :body (search!-1 (-> req :body-params :q))})
 
 (defmethod ig/init-key :handler/handler [_ _]
   (ring/ring-handler
@@ -51,11 +50,7 @@
     ["/search"
      {:post
       {:parameters {:body {:q [:string]}}
-       :handler (fn
-                  [e]
-                  (->
-                   {:body {:foo (-> e :body-params :q)}}
-                   (resp/status 200)))}}]
+       :handler search!}}]
     {:data
      {:coercion reitit.coercion.malli/coercion
       :muuntaja m/instance
@@ -74,6 +69,5 @@
 
 (comment
 
-
-
-)
+  (search!-1 "Alternatively")
+  )
