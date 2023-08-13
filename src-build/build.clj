@@ -28,7 +28,7 @@
   (println "Compiling server. Version:" version)
   (b/compile-clj {:basis      basis
                   :src-dirs   ["src"]
-                  :ns-compile '[ftlm.hearts.prod]
+                  :ns-compile '[ftlm.search.prod]
                   :class-dir  class-dir})
 
   (let [uber-file (str (or jar-name (default-jar-name {:version version})))]
@@ -36,7 +36,7 @@
     (b/uber {:class-dir class-dir
              :uber-file  uber-file
              :basis     basis
-             :main      'ftlm.hearts.prod})
+             :main      'ftlm.search.prod})
 
     (println "Setting up run scripts")
     (fs/delete-if-exists "release.jar")
