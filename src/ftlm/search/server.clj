@@ -1,7 +1,9 @@
 (ns ftlm.search.server
   (:require
-   [integrant.core :as ig]
+   [clojure.java.io :as io]
+   [clojure.string :as str]
 
+   [integrant.core :as ig]
    [ring.adapter.jetty :as jetty]
 
    [ring.util.response :as resp]
@@ -12,11 +14,36 @@
 
    [reitit.ring :as ring]
    [reitit.coercion.spec]
+   [ftlm.search.config :refer [config]]
 
    [reitit.ring.middleware.defaults]))
 
-;; (defn search! [{:keys [params] :as req}]
-;;   {:body (prn-str {:foo :bar})})
+(defn find-content! [file search-str]
+  (doall
+   (with-open [rdr (io/reader file)]
+     (sequence
+      (comp
+       (drop-while
+        (fn [line] (str/index-of line "div id=\"content\"" )))
+       (take-while
+        (complement (fn [line] (str/index-of line "div id=\"postamble\""))))
+       (filter #(str/index-of % search-str)))
+      (line-seq rdr)))))
+
+(defn search! [req]
+  (let [q (-> req :body-params :q)]
+    {:status 200
+     :body
+     (doall
+      (sequence
+       (comp
+        (map (fn [{:keys [path]}]
+               {:file (io/file (:ftlm-search/public-dir config) path)
+                :path path}))
+        (keep (fn [{:keys [file path]}]
+                (when-let [lines (seq (find-content! file q))]
+                  {:lines lines :path path}))))
+       (read-string (slurp (io/file (:ftlm-search/public-dir config) "posts-list.edn")))))}))
 
 (defmethod ig/init-key :handler/handler [_ _]
   (ring/ring-handler
@@ -46,4 +73,7 @@
   (.stop server))
 
 (comment
-  )
+
+
+
+)
