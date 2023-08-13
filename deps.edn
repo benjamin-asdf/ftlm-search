@@ -1,0 +1,16 @@
+{:paths ["src" "resources"]
+ :deps {integrant/integrant {:mvn/version "0.8.1"}
+        ring/ring-jetty-adapter {:mvn/version "1.10.0"}
+        ring/ring-defaults {:mvn/version "0.3.4"}
+        metosin/reitit-middleware {:mvn/version "0.7.0-alpha5"}
+        metosin/reitit {:mvn/version "0.7.0-alpha5"}
+        com.fbeyer/reitit-ring-defaults {:mvn/version "0.1.0"}
+        amalloy/ring-gzip-middleware {:mvn/version "0.1.4"}}
+ :aliases
+ {:server {}
+  :build
+  {:extra-paths ["src-build"]
+   :ns-default build
+   :extra-deps {io.github.clojure/tools.build {:git/tag "v0.8.2" :git/sha "ba1a2bf"}
+                io.github.seancorfield/build-clj {:git/tag "v0.8.0" :git/sha "9bd8b8a"}
+                babashka/fs {:mvn/version "0.4.19"}}}}}
