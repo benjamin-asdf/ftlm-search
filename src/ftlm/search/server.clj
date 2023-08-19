@@ -50,7 +50,7 @@
   {:no-result? true
    :q q})
 
-(def sane? (comp #(< 3  256) count))
+(def sane? (comp #(< 3 % 256) count))
 
 (defn search! [{{q :q} :body-params}]
   (if-not (sane? q)
