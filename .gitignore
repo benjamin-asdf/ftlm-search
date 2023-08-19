@@ -2,3 +2,4 @@
 /.cpcache/
 /target/
 /release.jar
+/out.edn

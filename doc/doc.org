@@ -1,1 +1,4 @@
 curl -X POST -H "Content-Type: application/json" -d '{"q":"your-search-term"}' http://localhost:8094/search
+
+
+curl -X POST -H "Content-Type: application/json" -d '{"q":"alter"}' https://faster-than-light-memes.xyz/search
