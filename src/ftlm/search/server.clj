@@ -18,6 +18,8 @@
 
    [reitit.ring.middleware.defaults]))
 
+(set! *warn-on-reflection* true)
+
 (defn find-content! [file search-str]
   (with-open [rdr (io/reader file)]
     (doall
@@ -31,6 +33,12 @@
            (or (str/index-of s search-str)
                (str/index-of s (str/lower-case search-str)))))))))))
 
+(defn file? [^java.io.File file] (.isFile file))
+
+(defn ->filename [^java.io.File file]
+  (let [p (.toPath file)]
+    (.getFileName p)))
+
 (defn search!-1 [q]
   (let [q (str/lower-case q)]
     (doall
@@ -40,10 +48,10 @@
          (file-seq dir)
          (sequence
           (comp
-           (filter #(.isFile %))
+           (filter file?)
            (keep (fn [file]
                    (when-let [lines (seq (find-content! file q))]
-                     {:lines lines :path (str (.getFileName (.toPath file)) ".html")})))))))))))
+                     {:lines lines :path (str (->filename file) ".html")})))))))))))
 
 (defn ->result [results q]
   {:results results
@@ -85,7 +93,7 @@
 (defmethod ig/init-key :adapter/jetty [_ {:keys [handler] :as opts}]
   (jetty/run-jetty handler (-> opts (dissoc :handler) (assoc :join? false))))
 
-(defmethod ig/halt-key! :adapter/jetty [_ server]
+(defmethod ig/halt-key! :adapter/jetty [_ ^org.eclipse.jetty.server.Server server]
   (.stop server))
 
 (comment
