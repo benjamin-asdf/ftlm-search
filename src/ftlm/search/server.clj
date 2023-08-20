@@ -21,26 +21,29 @@
 (defn find-content! [file search-str]
   (with-open [rdr (io/reader file)]
     (doall
-     (sequence
-      (comp
-       (drop-while
-        (fn [line] (str/index-of line "div id=\"content\"" )))
-       (take-while
-        (complement (fn [line] (str/index-of line "div id=\"postamble\""))))
-       (filter #(str/index-of % search-str)))
-      (line-seq rdr)))))
+     (->>
+      (line-seq rdr)
+      (sequence
+       (comp
+        (remove #(re-find #"^\s*#" %))
+        (filter
+         (fn [s]
+           (or (str/index-of s search-str)
+               (str/index-of s (str/lower-case search-str)))))))))))
 
 (defn search!-1 [q]
-  (doall
-   (sequence
-    (comp
-     (map (fn [{:keys [path]}]
-            {:file (io/file (:ftlm-search/public-dir config) path)
-             :path path}))
-     (keep (fn [{:keys [file path]}]
-             (when-let [lines (seq (find-content! file q))]
-               {:lines lines :path path}))))
-    (read-string (slurp (io/file (:ftlm-search/public-dir config) "posts-list.edn"))))))
+  (let [q (str/lower-case q)]
+    (doall
+     (sequence
+      (let [dir (io/file (:ftlm-search/public-dir config) "search-index")]
+        (->>
+         (file-seq dir)
+         (sequence
+          (comp
+           (filter #(.isFile %))
+           (keep (fn [file]
+                   (when-let [lines (seq (find-content! file q))]
+                     {:lines lines :path (str (.getFileName (.toPath file)) ".html")})))))))))))
 
 (defn ->result [results q]
   {:results results
@@ -87,9 +90,4 @@
 
 (comment
   (search!-1 "Alternatively")
-  '({:lines ("Alternatively, if you have cider")
-    :path "jacking-nbb.html"}
-   {:lines ("Alternatively, I count every vertex twice and do the front face + 1 cubie on the right.")
-    :path "dreams.html"}
-   {:lines ("Alternatively, I would set <code>show-paren-match</code> to white. It makes it blink pretty!")
-    :path "faq.html"}))
+  (search!-1 "Some"))
